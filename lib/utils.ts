@@ -33,13 +33,13 @@ export async function getGeoLocation(ip: string) {
     return { country: 'Localhost', city: 'Local Network' };
   }
   try {
-    const res = await fetch(http://ip-api.com/json/);
+    const res = await fetch('http://ip-api.com/json/' + ip);
     const data = await res.json();
     if (data.status === 'success') {
       return { country: data.country || 'Desconhecido', city: data.city || 'Desconhecida' };
     }
   } catch (e) {
-    // Falha silenciosa na geolocalização por IP
+    // Falha silenciosa
   }
   return { country: 'Desconhecido', city: 'Desconhecida' };
 }
