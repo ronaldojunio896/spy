@@ -2,11 +2,14 @@ import { db } from '@/lib/db';
 import { spylinks, logs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
 export default async function TrackingPage({ params }: { params: { id: string } }) {
   const { id } = params;
 
-  const [link] = await db.select().from(spylinks).where(eq(spylinks.id, id));
+  // Buscar o link correspondente no banco de dados
+  const results = await db.select().from(spylinks).where(eq(spylinks.id, id));
+  const link = results[0];
 
   if (!link) {
     return (
@@ -19,15 +22,22 @@ export default async function TrackingPage({ params }: { params: { id: string } 
     );
   }
 
+  // Capturar IP e User Agent reais da vítima através dos headers do Next.js
   try {
+    const headersList = await headers();
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0] : '127.0.0.1';
+    const userAgent = headersList.get('user-agent') || 'Unknown Device';
+
     await db.insert(logs).values({
       spylinkId: id,
-      ip: '127.0.0.1',
-      userAgent: 'Browser Client',
+      ip,
+      userAgent,
     });
   } catch (e) {
-    console.error('Erro ao salvar log:', e);
+    console.error('Erro ao salvar log de acesso:', e);
   }
 
+  // Redirecionamento forçado para a URL de destino cadastrada pelo operador
   redirect(link.targetUrl);
 }
