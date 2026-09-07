@@ -29,28 +29,18 @@ const STATUS = {
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [search, setSearch] = useState('');
   const [targets, setTargets] = useState([]);
-
-  const [formData, setFormData] = useState({
-    nome: '',
-    endereco: '',
-    status: 'investigation',
-    obs: '',
-  });
+  const [formData, setFormData] = useState({ nome: '', endereco: '', status: 'investigation', obs: '' });
 
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
   useEffect(() => {
     if (activeTab !== 'min') return;
-
     if (window.google?.maps) {
       initMap();
       return;
     }
-
     const existingScript = document.getElementById('google-maps-script');
     if (existingScript) return;
 
@@ -96,20 +86,7 @@ export default function DashboardPage() {
     setFormData({ nome: '', endereco: '', status: 'investigation', obs: '' });
   };
 
-  const removeTarget = (id) => {
-    setTargets((prev) => prev.filter((target) => target.id !== id));
-  };
-
-  const filteredTargets = targets.filter((target) => {
-    const value = search.toLowerCase();
-    return (
-      target.nome.toLowerCase().includes(value) ||
-      target.endereco.toLowerCase().includes(value) ||
-      STATUS[target.status]?.label.toLowerCase().includes(value)
-    );
-  });
-
-  const NavItem = ({ id, icon, label, badge }) => (
+  const NavItem = ({ id, icon, label }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={
@@ -119,46 +96,12 @@ export default function DashboardPage() {
           : 'text-slate-400 hover:text-white hover:bg-white/[0.04]')
       }
     >
-      <span
-        className={
-          'w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ' +
-          (activeTab === id ? 'bg-cyan-500/10' : 'bg-slate-900 group-hover:bg-slate-800')
-        }
-      >
+      <span className={'w-9 h-9 rounded-lg flex items-center justify-center text-lg ' + (activeTab === id ? 'bg-cyan-500/10' : 'bg-slate-900')}>
         {icon}
       </span>
       <span className="flex-1 text-left text-sm font-medium">{label}</span>
-      {badge && (
-        <span className="min-w-5 h-5 px-1.5 flex items-center justify-center rounded-full bg-cyan-500/10 text-cyan-300 text-[10px] font-bold">
-          {badge}
-        </span>
-      )}
     </button>
   );
-
-  const StatCard = ({ icon, title, value, description, accent = 'cyan' }) => {
-    const accentMap = {
-      cyan: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/10',
-      emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/10',
-      amber: 'text-amber-400 bg-amber-500/10 border-amber-500/10',
-      red: 'text-red-400 bg-red-500/10 border-red-500/10',
-    };
-    return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 shadow-xl">
-        <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-cyan-500/5 blur-2xl" />
-        <div className="relative flex items-start justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">{title}</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-white">{value}</p>
-            <p className="mt-1 text-xs text-slate-500">{description}</p>
-          </div>
-          <div className={'h-11 w-11 rounded-xl border flex items-center justify-center text-xl ' + accentMap[accent]}>
-            {icon}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="h-screen w-full overflow-hidden bg-[#070b14] text-slate-100 font-sans flex">
@@ -195,7 +138,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-3 border-t border-white/[0.06]">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full rounded-xl border border-white/[0.05] bg-white/[0.02] py-2.5 text-slate-500 hover:text-white hover:bg-white/[0.05] transition text-xs">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full rounded-xl border border-white/[0.05] bg-white/[0.02] py-2.5 text-slate-500 hover:text-white transition text-xs">
             {isSidebarOpen ? '‹ Recolher menu' : '›'}
           </button>
         </div>
@@ -221,18 +164,18 @@ export default function DashboardPage() {
           {activeTab === 'dashboard' && (
             <div className="p-7 max-w-[1600px] mx-auto">
               <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Central Operacional</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button onClick={() => setActiveTab('spylink')} className="text-left rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 hover:border-cyan-500/20 transition">
                   <h3 className="font-bold text-white text-lg">🔗 SpyLink</h3>
-                  <p className="text-xs text-slate-500 mt-1">Gerenciamento de links e campanhas.</p>
+                  <p className="text-xs text-slate-500 mt-1">Gerenciamento de links.</p>
                 </button>
                 <button onClick={() => setActiveTab('min')} className="text-left rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 hover:border-cyan-500/20 transition">
                   <h3 className="font-bold text-white text-lg">🗺️ Mapeamento MIN</h3>
-                  <p className="text-xs text-slate-500 mt-1">Geolocalização de alvos em tempo real.</p>
+                  <p className="text-xs text-slate-500 mt-1">Geolocalização de alvos.</p>
                 </button>
                 <button onClick={() => setActiveTab('geoword')} className="text-left rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 hover:border-cyan-500/20 transition">
                   <h3 className="font-bold text-white text-lg">🌐 GeoWord</h3>
-                  <p className="text-xs text-slate-500 mt-1">Nova ferramenta de relatórios e dados globais.</p>
+                  <p className="text-xs text-slate-500 mt-1">Ferramenta de relatórios e dados globais.</p>
                 </button>
               </div>
             </div>
@@ -267,7 +210,7 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-bold text-cyan-400">🌐 GeoWord — Nova Ferramenta</h1>
                 <p className="text-sm text-slate-400 mt-2">Módulo operacional dedicado a relatórios integrados, análise de dados textuais e geolocalização estendida.</p>
                 <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                  <p className="text-xs text-slate-500">Status: Módulo carregado e pronto para receber parâmetros de integração.</p>
+                  <p className="text-xs text-slate-500">Status: Módulo carregado e pronto para operação.</p>
                 </div>
               </div>
             </div>
