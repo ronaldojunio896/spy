@@ -1,77 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-
-interface Target {
-  id: number;
-  nome: string;
-  endereco: string;
-  status: string;
-  obs: string;
-  createdAt: string;
-}
+import { useState } from 'react';
+import SpyLinkPanel from '@/components/spylink/SpyLinkPanel';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [targets, setTargets] = useState<Target[]>([]);
-  const [formData, setFormData] = useState({ nome: '', endereco: '', status: 'investigation', obs: '' });
-
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (activeTab !== 'min') return;
-    const win = window as any;
-    if (win.google?.maps) {
-      initMap();
-      return;
-    }
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) return;
-
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-    if (!apiKey) return;
-
-    const script = document.createElement('script');
-    script.id = 'google-maps-script';
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + apiKey + '&libraries=places';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => { initMap(); };
-    document.head.appendChild(script);
-  }, [activeTab]);
-
-  const initMap = () => {
-    const win = window as any;
-    if (!mapRef.current || !win.google?.maps) return;
-    if (mapInstanceRef.current) {
-      win.google.maps.event.trigger(mapInstanceRef.current, 'resize');
-      return;
-    }
-    mapInstanceRef.current = new win.google.maps.Map(mapRef.current, {
-      center: { lat: -19.9167, lng: -43.9345 },
-      zoom: 13,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      backgroundColor: '#070b14',
-    });
-  };
-
-  const addTarget = () => {
-    if (!formData.nome.trim()) {
-      alert('Informe um nome para o registro.');
-      return;
-    }
-    const newTarget: Target = {
-      id: Date.now(),
-      ...formData,
-      createdAt: new Date().toLocaleString('pt-BR'),
-    };
-    setTargets((prev: Target[]) => [newTarget, ...prev]);
-    setFormData({ nome: '', endereco: '', status: 'investigation', obs: '' });
-  };
 
   const NavItem = ({ id, icon, label }: { id: string; icon: string; label: string }) => (
     <button
@@ -138,7 +72,7 @@ export default function DashboardPage() {
             <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">R1 TECH</p>
             <h2 className="text-lg font-bold text-white">
               {activeTab === 'dashboard' && 'Central Operacional'}
-              {activeTab === 'spylink' && 'SpyLink'}
+              {activeTab === 'spylink' && 'SpyLink Reformulado'}
               {activeTab === 'min' && 'Mapeamento Investigativo'}
               {activeTab === 'geoword' && 'GeoWord'}
               {activeTab === 'activity' && 'Atividade'}
@@ -153,8 +87,8 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Central Operacional</h1>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button onClick={() => setActiveTab('spylink')} className="text-left rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 hover:border-cyan-500/20 transition">
-                  <h3 className="font-bold text-white text-lg">🔗 SpyLink</h3>
-                  <p className="text-xs text-slate-500 mt-1">Gerenciamento de links.</p>
+                  <h3 className="font-bold text-white text-lg">🔗 SpyLink Reformulado</h3>
+                  <p className="text-xs text-slate-500 mt-1">Gerenciamento avançado de links e templates.</p>
                 </button>
                 <button onClick={() => setActiveTab('min')} className="text-left rounded-2xl border border-white/[0.06] bg-[#0d1422] p-5 hover:border-cyan-500/20 transition">
                   <h3 className="font-bold text-white text-lg">🗺️ Mapeamento MIN</h3>
@@ -169,36 +103,23 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'spylink' && (
-            <div className="p-7 max-w-[1400px] mx-auto">
-              <h1 className="text-2xl font-bold mb-2">SpyLink</h1>
-              <p className="text-sm text-slate-500">Módulo de inteligência de links ativos.</p>
+            <div className="p-7 max-w-[1600px] mx-auto">
+              <SpyLinkPanel />
             </div>
           )}
 
           {activeTab === 'min' && (
-            <div className="h-full flex relative">
-              <aside className="w-[380px] bg-[#0a101c] border-r border-white/[0.06] p-4 flex flex-col">
-                <h2 className="font-bold text-sm text-cyan-400 mb-4">Mapeamento MIN</h2>
-                <div className="space-y-3">
-                  <input type="text" placeholder="Nome do Alvo" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} className="w-full h-10 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 text-xs text-white" />
-                  <input type="text" placeholder="Endereço" value={formData.endereco} onChange={(e) => setFormData({...formData, endereco: e.target.value})} className="w-full h-10 rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 text-xs text-white" />
-                  <button onClick={addTarget} className="w-full h-10 rounded-xl bg-cyan-500 text-xs font-bold text-slate-950">Adicionar Registro</button>
-                </div>
-              </aside>
-              <div className="flex-1 relative">
-                <div ref={mapRef} className="absolute inset-0"></div>
-              </div>
+            <div className="p-7 max-w-[1400px] mx-auto">
+              <h1 className="text-2xl font-bold mb-2">Mapeamento MIN</h1>
+              <p className="text-sm text-slate-500">Módulo de geolocalização e alvos.</p>
             </div>
           )}
 
           {activeTab === 'geoword' && (
             <div className="p-7 max-w-[1400px] mx-auto">
               <div className="rounded-2xl border border-white/[0.06] bg-[#0d1422] p-7">
-                <h1 className="text-2xl font-bold text-cyan-400">🌐 GeoWord — Nova Ferramenta</h1>
+                <h1 className="text-2xl font-bold text-cyan-400">🌐 GeoWord — Relatórios Globais</h1>
                 <p className="text-sm text-slate-400 mt-2">Módulo operacional dedicado a relatórios integrados, análise de dados textuais e geolocalização estendida.</p>
-                <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                  <p className="text-xs text-slate-500">Status: Módulo carregado e pronto para operação.</p>
-                </div>
               </div>
             </div>
           )}

