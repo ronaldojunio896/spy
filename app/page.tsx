@@ -2,42 +2,28 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const STATUS = {
-  investigation: {
-    label: 'Em Investigação',
-    color: 'text-amber-300',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20',
-    dot: 'bg-amber-400',
-  },
-  priority: {
-    label: 'Prioridade Alta',
-    color: 'text-red-300',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20',
-    dot: 'bg-red-400',
-  },
-  completed: {
-    label: 'Concluído',
-    color: 'text-emerald-300',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
-    dot: 'bg-emerald-400',
-  },
-};
+interface Target {
+  id: number;
+  nome: string;
+  endereco: string;
+  status: string;
+  obs: string;
+  createdAt: string;
+}
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [targets, setTargets] = useState([]);
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [targets, setTargets] = useState<Target[]>([]);
   const [formData, setFormData] = useState({ nome: '', endereco: '', status: 'investigation', obs: '' });
 
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
 
   useEffect(() => {
     if (activeTab !== 'min') return;
-    if (window.google?.maps) {
+    const win = window as any;
+    if (win.google?.maps) {
       initMap();
       return;
     }
@@ -57,12 +43,13 @@ export default function DashboardPage() {
   }, [activeTab]);
 
   const initMap = () => {
-    if (!mapRef.current || !window.google?.maps) return;
+    const win = window as any;
+    if (!mapRef.current || !win.google?.maps) return;
     if (mapInstanceRef.current) {
-      window.google.maps.event.trigger(mapInstanceRef.current, 'resize');
+      win.google.maps.event.trigger(mapInstanceRef.current, 'resize');
       return;
     }
-    mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+    mapInstanceRef.current = new win.google.maps.Map(mapRef.current, {
       center: { lat: -19.9167, lng: -43.9345 },
       zoom: 13,
       mapTypeControl: false,
@@ -77,16 +64,16 @@ export default function DashboardPage() {
       alert('Informe um nome para o registro.');
       return;
     }
-    const newTarget = {
+    const newTarget: Target = {
       id: Date.now(),
       ...formData,
       createdAt: new Date().toLocaleString('pt-BR'),
     };
-    setTargets((prev) => [newTarget, ...prev]);
+    setTargets((prev: Target[]) => [newTarget, ...prev]);
     setFormData({ nome: '', endereco: '', status: 'investigation', obs: '' });
   };
 
-  const NavItem = ({ id, icon, label }) => (
+  const NavItem = ({ id, icon, label }: { id: string; icon: string; label: string }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={
